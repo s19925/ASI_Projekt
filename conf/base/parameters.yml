@@ -1,0 +1,5 @@
+input_param:
+  n_rows: 100
+
+primary_param:
+  n_rows: 100
