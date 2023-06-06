@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+from sklearn.ensemble import RandomForestClassifier
 
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
@@ -7,15 +8,12 @@ from sklearn.metrics import accuracy_score, roc_auc_score
 from typing import Any, Dict
 
 from sklearn.preprocessing import MinMaxScaler
-
+import wandb
 import joblib
 import logging
 
-def prepare_data_for_modeling(
-    data: pd.DataFrame, primary_param: Dict[str, Any]
-) -> pd.DataFrame:
-    n_rows = primary_param["n_rows"]
-    data = data.head(n_rows)
+def prepare_data_for_modeling(data):
+    #_rows = primary_param["n_rows"]
     '''Prepare data for modeling
 
     Inputs:
@@ -74,30 +72,26 @@ def split_data(data):
 
     return X_train, X_test, y_train, y_test
 
+def experiment_tracking():
+    wandb.init(project="pjatk_asi_project")
+    n_estimators = wandb.config.n_estimators
+    max_depth = wandb.config.max_depth
+    return n_estimators, max_depth
 
-def train_model(X_train, y_train):
-    '''Train a model predicting high-revenue customers from features and labels
 
-    Inputs:
-    X_train: a pandas dataframe with customers features
-    y_train: a pandas series with customers labels
-
-    Outputs:
-    model: a trained model
-
-    '''
+def train_model(X_train, y_train, n_estimators, max_depth):
 
     # Suppress "a copy of slice from a DataFrame is being made" warning
     pd.options.mode.chained_assignment = None
+    model = RandomForestClassifier(n_estimators=n_estimators, max_depth=max_depth, random_state=0)
 
-    # model = RandomForestClassifier()
-
+    '''
     model = LogisticRegression(C=0.056, class_weight={}, dual=False, fit_intercept=True,
                 intercept_scaling=1, l1_ratio=None, max_iter=1000,
                 multi_class='auto', n_jobs=None, penalty='l2',
                 random_state=123, solver='lbfgs', tol=0.0001, verbose=0,
                 warm_start=False)
-
+    '''
 
     model.fit(X_train, y_train)
 
@@ -136,12 +130,35 @@ def evaluate_model(model, X_test, y_test):
     logger.info("Model has an ROC AUC of %.3f on test data.", roc_auc)
 
 
+
 # Read customers_labeled dataset
 
-if __name__ == "__main__":
+def main():
     data = pd.read_csv('data/01_raw/heart.csv')
 
     data_prepared = prepare_data_for_modeling(data)
     X_train, X_test, y_train, y_test = split_data(data_prepared)
-    model = train_model(X_train, y_train)
-    evaluate_model(model, X_test, y_test)
+
+    model = train_model(X_train, y_train, experiment_tracking())
+    accuracy, roc_auc = evaluate_model(model, X_test, y_test)
+
+    wandb.log({"n_estimators and max_depth": experiment_tracking()})
+    wandb.log({"accuracy": accuracy})
+    wandb.log({"roc_auc": roc_auc})
+
+    print("accuracy: ", accuracy)
+    print("roc_auc: ", roc_auc)
+
+sweep_configuration = {
+    'method': 'bayes',
+    'name': 'sweep',
+    'metric': {'goal': 'maximize', 'name': 'roc_auc'},
+    'parameters':
+        {
+            'n_estimators': {'min': 25, 'max': 200},
+            'max_depth': {'min': 3, 'max': 10}
+        }
+}
+
+sweep_id = wandb.sweep(sweep=sweep_configuration, project='my-pjatk-asi-project-sweep')
+wandb.agent(sweep_id, function=main, count=4)

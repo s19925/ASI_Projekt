@@ -19,7 +19,6 @@ def register_pipelines() -> Dict[str, Pipeline]:
     """
     return {
         "pipeline1": pipeline([processing_pipeline()]),
-        "__default__": pipeline([processing_pipeline()]),
         "pipeline2": pipeline([train_pipeline()]),
-        "__default__": pipeline([train_pipeline()])
+        "__default__": pipeline([processing_pipeline()]) + pipeline([train_pipeline()])
     }

@@ -20,4 +20,5 @@ kedro[pandas.CSVDataSet, pandas.ExcelDataSet, pandas.ParquetDataSet]==0.18.3   #
 kedro-viz
 user_agents~=2.2
 pandas
+wandb
 

@@ -3,3 +3,6 @@ input_param:
 
 primary_param:
   n_rows: 100
+
+wandb_n_estimatros: 200
+wandb_max_depth: 10

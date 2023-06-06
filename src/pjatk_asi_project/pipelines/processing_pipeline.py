@@ -1,6 +1,6 @@
 import sys
 
-sys.path.append("src/kedro_test")
+sys.path.append("src/pjatk_asi_project")
 
 from kedro.pipeline import Pipeline, node
 
@@ -19,8 +19,9 @@ def processing_pipeline(**kwargs):
             node(
                 func=drop_null_data,
                 inputs="intermediate_data",
-                outputs="processed_data",
+                outputs="primary_Data",
                 name="drop_null_data",
             ),
+
         ]
     )
